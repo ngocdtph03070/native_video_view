@@ -83,7 +83,6 @@ class NativeVideoViewController(private val id: Int,
         methodChannel.setMethodCallHandler(null)
         this.destroyVideoView()
         registrar.activity().application.unregisterActivityLifecycleCallbacks(this)
-        Log.d("VIDEO. NVV", "Disposed view $id")
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {

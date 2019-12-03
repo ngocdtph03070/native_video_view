@@ -94,6 +94,10 @@ class _NativeVideoViewState extends State<NativeVideoView> {
   /// to update the.
   _MediaControlsController _mediaController;
 
+  Widget _platformView;
+
+  bool _fullscreen = true;
+
   @override
   void initState() {
     super.initState();
@@ -111,26 +115,9 @@ class _NativeVideoViewState extends State<NativeVideoView> {
   /// Builds the view based on the platform that runs the app.
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> creationParams = <String, dynamic>{};
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return _buildVideoView(
-          child: AndroidView(
-        viewType: 'native_video_view',
-        onPlatformViewCreated: onPlatformViewCreated,
-        creationParams: creationParams,
-        creationParamsCodec: const StandardMessageCodec(),
-      ));
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return _buildVideoView(
-        child: UiKitView(
-          viewType: 'native_video_view',
-          onPlatformViewCreated: onPlatformViewCreated,
-          creationParams: creationParams,
-          creationParamsCodec: const StandardMessageCodec(),
-        ),
-      );
-    }
-    return Text('$defaultTargetPlatform is not yet supported by this plugin.');
+    return _buildVideoView(
+      child: _getPlatformView(),
+    );
   }
 
   /// Builds the video view depending of the configuration.
@@ -155,11 +142,36 @@ class _NativeVideoViewState extends State<NativeVideoView> {
         : videoView;
   }
 
+  Widget _getPlatformView() {
+    if (_platformView == null) {
+      final Map<String, dynamic> creationParams = <String, dynamic>{};
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        _platformView = AndroidView(
+          viewType: 'native_video_view',
+          onPlatformViewCreated: onPlatformViewCreated,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+        );
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        _platformView = UiKitView(
+          viewType: 'native_video_view',
+          onPlatformViewCreated: onPlatformViewCreated,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+        );
+      } else {
+        _platformView =
+            Text('$defaultTargetPlatform is not yet supported by this plugin.');
+      }
+    }
+    return _platformView;
+  }
+
   /// Callback that is called when the view is created in the platform.
   Future<void> onPlatformViewCreated(int id) async {
     final VideoViewController controller =
         await VideoViewController.init(id, this);
-    _controller.complete(controller);
+    if (!_controller.isCompleted) _controller.complete(controller);
     if (widget.onCreated != null) widget.onCreated(controller);
   }
 
@@ -254,6 +266,18 @@ class _NativeVideoViewState extends State<NativeVideoView> {
           break;
       }
     }
+  }
+
+  void _toggleFullScreen() {
+    final fullScreen = !_fullscreen;
+    if (fullScreen) {
+      SystemChrome.setEnabledSystemUIOverlays([]);
+    } else {
+      SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+    }
+    setState(() {
+      _fullscreen = fullScreen;
+    });
   }
 
   /// When the position is changed in the media controller, the action is
