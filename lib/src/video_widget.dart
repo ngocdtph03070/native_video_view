@@ -94,9 +94,7 @@ class _NativeVideoViewState extends State<NativeVideoView> {
   /// to update the.
   _MediaControlsController _mediaController;
 
-  Widget _platformView;
-
-  bool _fullscreen = true;
+  Widget _view;
 
   @override
   void initState() {
@@ -115,56 +113,55 @@ class _NativeVideoViewState extends State<NativeVideoView> {
   /// Builds the view based on the platform that runs the app.
   @override
   Widget build(BuildContext context) {
-    return _buildVideoView(
-      child: _getPlatformView(),
-    );
+    return _buildVideoView();
   }
 
   /// Builds the video view depending of the configuration.
-  Widget _buildVideoView({Widget child}) {
-    bool keepAspectRatio = widget.keepAspectRatio ?? false;
-    bool showMediaController = widget.showMediaController ?? false;
-    Widget videoView = keepAspectRatio
-        ? AspectRatio(
-            child: child,
-            aspectRatio: _aspectRatio,
-          )
-        : child;
-    return showMediaController
-        ? _MediaController(
-            child: videoView,
-            controller: _mediaController,
-            autoHide: widget.autoHide,
-            autoHideTime: widget.autoHideTime,
-            onControlPressed: _onControlPressed,
-            onPositionChanged: _onPositionChanged,
-          )
-        : videoView;
+  Widget _buildVideoView() {
+    if (_view == null) {
+      Widget platformView = _getPlatformView();
+      bool keepAspectRatio = widget.keepAspectRatio ?? false;
+      bool showMediaController = widget.showMediaController ?? false;
+      Widget videoView = keepAspectRatio
+          ? AspectRatio(
+              child: platformView,
+              aspectRatio: _aspectRatio,
+            )
+          : platformView;
+      _view = showMediaController
+          ? _MediaController(
+              child: videoView,
+              controller: _mediaController,
+              autoHide: widget.autoHide,
+              autoHideTime: widget.autoHideTime,
+              onControlPressed: _onControlPressed,
+              onPositionChanged: _onPositionChanged,
+            )
+          : videoView;
+    }
+    return _view;
   }
 
   Widget _getPlatformView() {
-    if (_platformView == null) {
-      final Map<String, dynamic> creationParams = <String, dynamic>{};
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        _platformView = AndroidView(
-          viewType: 'native_video_view',
-          onPlatformViewCreated: onPlatformViewCreated,
-          creationParams: creationParams,
-          creationParamsCodec: const StandardMessageCodec(),
-        );
-      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-        _platformView = UiKitView(
-          viewType: 'native_video_view',
-          onPlatformViewCreated: onPlatformViewCreated,
-          creationParams: creationParams,
-          creationParamsCodec: const StandardMessageCodec(),
-        );
-      } else {
-        _platformView =
-            Text('$defaultTargetPlatform is not yet supported by this plugin.');
-      }
+    final Map<String, dynamic> creationParams = <String, dynamic>{};
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidView(
+        viewType: 'native_video_view',
+        onPlatformViewCreated: onPlatformViewCreated,
+        creationParams: creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
+      );
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return UiKitView(
+        viewType: 'native_video_view',
+        onPlatformViewCreated: onPlatformViewCreated,
+        creationParams: creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
+      );
+    } else {
+      return Text(
+          '$defaultTargetPlatform is not yet supported by this plugin.');
     }
-    return _platformView;
   }
 
   /// Callback that is called when the view is created in the platform.
@@ -243,7 +240,8 @@ class _NativeVideoViewState extends State<NativeVideoView> {
           controller.play();
           break;
         case _MediaControl.stop:
-          controller.stop();
+//          controller.stop();
+          _toggleFullScreen();
           break;
         case _MediaControl.fwd:
           int duration = controller.videoFile?.info?.duration;
@@ -269,15 +267,16 @@ class _NativeVideoViewState extends State<NativeVideoView> {
   }
 
   void _toggleFullScreen() {
-    final fullScreen = !_fullscreen;
-    if (fullScreen) {
-      SystemChrome.setEnabledSystemUIOverlays([]);
-    } else {
-      SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
-    }
-    setState(() {
-      _fullscreen = fullScreen;
-    });
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Scaffold(
+        body: Container(
+          color: Colors.black,
+          child: _view,
+        ),
+      ),
+    );
   }
 
   /// When the position is changed in the media controller, the action is
