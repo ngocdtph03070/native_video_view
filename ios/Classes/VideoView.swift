@@ -1,10 +1,3 @@
-//
-//  VideoView.swift
-//  native_video_view
-//
-//  Created by Luis Jara Castillo on 11/4/19.
-//
-
 import UIKit
 import AVFoundation
 
@@ -87,7 +80,7 @@ class VideoView : UIView {
     func pause(restart:Bool){
         self.player?.pause()
         if(restart){
-            self.player?.seek(to: kCMTimeZero)
+            self.player?.seek(to: CMTime.zero)
         }
     }
     
@@ -146,7 +139,7 @@ class VideoView : UIView {
     
     func seekTo(positionInMillis: Int64?){
         if let pos = positionInMillis {
-            self.player?.seek(to: CMTimeMake(pos, 1000), toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero)
+            self.player?.seek(to: CMTimeMake(value: pos, timescale: 1000), toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
         }
     }
     
@@ -211,6 +204,8 @@ class VideoView : UIView {
                     let errorMessage = error.localizedDescription
                     self.notifyOnFailedObserver(message: errorMessage)
                 }
+                break
+             default:
                 break
             }
         }
